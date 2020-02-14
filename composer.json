@@ -1,0 +1,21 @@
+{
+    "name": "motto/wp-scan",
+    "description": "Scan a URL to detect and retrieve WordPress data.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Greg Hunt",
+            "email": "greg@mottodesignstudio.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Motto\\": "src"
+        }
+    },    
+    "minimum-stability": "dev",
+    "require": {
+        "guzzlehttp/guzzle": "^7.0@dev"
+    }
+}
