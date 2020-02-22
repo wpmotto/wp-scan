@@ -5,17 +5,17 @@ namespace Motto;
 use Motto\WpChecker;
 
 class WpScan {
+
     protected $url;
-    protected $client;
     protected $checks = [
-        'endpoints' => true,
-        'version' => true,
-        'plugins' => false,
+        'server' => \Motto\Checks\WpServerCheck::class,
+        'endpoints' => \Motto\Checks\WpEndpointsCheck::class,
+        'version' => \Motto\Checks\WpVersionCheck::class,
+        'ssl' => \Motto\Checks\WpSslCheck::class,
+        'plugins' => \Motto\Checks\WpPluginsCheck::class,
     ];
 
-    protected $results = [];
-
-    public function __construct( String $url, $checks = [] )
+    public function __construct( String $url, Array $checks = [] )
     {
         $this->url = $url;
         $this->checks($checks);

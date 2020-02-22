@@ -3,30 +3,35 @@
 namespace Motto;
 
 use GuzzleHttp\Client;
+use Spatie\SslCertificate\SslCertificate;
+use Motto\WpResultCollection;
+use Motto\Checks\WpConnectionCheck;
 use DOMDocument;
 use DOMXpath;
 
 class WpChecker {
 
-    const VALID_CHECKS = [
-        'endpoints',
-        'version',
-        'plugins',
-    ];
-
     protected $checks = [];
     protected $results = [];
-    protected $url;
     protected $client;
+    protected $header;
     protected $dom;
     protected $xpath;
+    protected $url;
+    protected $host;
+    protected $scheme;
 
     public function __construct( array $checks, string $url )
     {
+        $this->dom = new DOMDocument;
+        $this->results = new WpResultCollection;
+        $this->setUrl( $url );
+        $this->setClient();
         $this->checks = $this->sanitize($checks);
-        $this->url = $url;
-        $this->client = new Client(['base_uri' => $this->url]);
-        $this->setupDom();
+        /**
+         * Required check.
+         */
+        $this->add(WpConnectionCheck::class);
     }
 
     public function __get( $prop )
@@ -35,29 +40,76 @@ class WpChecker {
             return $this->{$prop}();
     }
 
-    private function sanitize( array $checks )
+    public function add( String $check )
     {
-        return array_intersect(
-            array_keys(array_filter($checks)), 
-            self::VALID_CHECKS
-        );
+        $this->checks[$check::name()] = $check;
     }
 
-    private function setupDom()
+    public function url()
     {
-        $response = $this->client->get($this->url);
+        return $this->scheme . '://' . $this->host;
+    }
+
+    public function getClient()
+    {
+        return $this->client;
+    }
+
+    public function setClient( $options = [] )
+    {
+        $defaultConfig = [
+            'base_uri' => $this->url(),
+            'verify' => true,
+        ];
+        $config = array_merge($options, $defaultConfig);
+
+        $this->client = new Client($config);
+        return $this;
+    }
+
+    public function setResponse( $response )
+    {
         $html = $response->getBody()->getContents();
-        $this->dom = new DOMDocument;
+        $this->header = $response->getHeaders();
         @$this->dom->loadHTML($html);
         $this->xpath = new DOMXpath($this->dom);
     }
 
+    private function sanitize( array $checks )
+    {
+        return array_filter($checks);
+    }
+
+    public function disableSslConnection()
+    {
+        $this->removeCheck('ssl');
+        $this->scheme = 'http';
+        $this->setClient(['verify' => false]);
+    }
+
     public function check()
     {
-        foreach( $this->checks as $check ) {
-            $this->results[$check] = $this->{$check};
+        foreach( $this->checks as $name => $class ) {
+            $check = new $class($this);
+            $result = $check->run()->result();
+            $this->results->add($result);
         }
+
         return $this;
+    }
+
+    public function removeCheck( $remove )
+    {
+        if( !is_array($remove) )
+            $remove = [$remove];
+
+        $this->checks = array_diff($this->checks, $remove);
+        return $this;
+    }
+
+    public function clearChecks()
+    {
+        $this->checks = [];
     }
 
     public function getResults()
@@ -65,39 +117,19 @@ class WpChecker {
         return $this->results;
     }
 
-    public function endpoints()
+    public function getScheme()
     {
-        $endpoints = [
-            '/wp-admin' => false,
-            '/wp-login.php' => false,
-        ];
-        foreach( $endpoints as $uri => $found ) {
-            $endpoints[$uri] = (
-                $this->client->get($uri)->getStatusCode() == 200
-            );
-        }
-
-        return [
-            'name' => 'endpoints',
-            'endpoints' => $endpoints,
-            'found' => count(array_filter($endpoints)),
-        ];
+        return $this->scheme;
     }
 
-    public function version()
+    public function setUrl( $url, $scheme = 'https' )
     {
-        $meta = $this->xpath->query("//meta[contains(@name,'generator')]");
-        $version = false;
-        if( $meta->length > 0 )
-            $generator = $meta[0]->getAttribute('content');
+        $this->url = $url;
+        if( strpos($url, 'http', 0) === false )
+            throw new \Exception("Please provide the full URL");
 
-        if( strpos(strtolower($generator), 'wordpress') !== false )
-            $version = $generator;
-
-        return [
-            'name' => 'version',
-            'generator' => $generator,
-            'version' => $version,
-        ];
-    }    
+        $url = parse_url($url);
+        $this->host = $url['host'];
+        $this->scheme = $scheme;
+    }
 }
