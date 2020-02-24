@@ -4,15 +4,17 @@ namespace Motto;
 
 use GuzzleHttp\Client;
 use Spatie\SslCertificate\SslCertificate;
-use Motto\WpResultCollection;
+use Motto\Checks\WpCheck;
 use Motto\Checks\WpConnectionCheck;
+use JsonSerializable;
 use DOMDocument;
 use DOMXpath;
 
-class WpChecker {
+class WpChecker implements JsonSerializable {
 
     protected $checks = [];
     protected $results = [];
+    protected $inits = [];
     protected $client;
     protected $header;
     protected $dom;
@@ -24,30 +26,47 @@ class WpChecker {
     public function __construct( array $checks, string $url )
     {
         $this->dom = new DOMDocument;
-        $this->results = new WpResultCollection;
         $this->setUrl( $url );
         $this->setClient();
-        $this->checks = $this->sanitize($checks);
-        /**
-         * Required check.
-         */
-        $this->add(WpConnectionCheck::class);
+        $this->add(new WpConnectionCheck( $this ));
+        $this->collect($checks);
     }
 
-    public function __get( $prop )
+    public function collect( $checks )
     {
-        if( method_exists( $this, $prop ) )
-            return $this->{$prop}();
+        foreach( $checks as $check ) {
+            $this->add(new $check( $this ));
+        }
     }
 
-    public function add( String $check )
+    public function add( WpCheck $check )
     {
-        $this->checks[$check::name()] = $check;
+        if( method_exists( $check, 'init' ) )
+            $this->inits[] = $check;
+
+        $this->checks[$check->name()] = $check;
+    }
+
+    public function remove( $remove )
+    {
+        unset($this->checks[$remove]);
+        return $this;
+    }
+
+    public function clearChecks()
+    {
+        $this->checks = [];
+        return $this;
     }
 
     public function url()
     {
         return $this->scheme . '://' . $this->host;
+    }
+
+    public function getHost()
+    {
+        return $this->host;
     }
 
     public function getClient()
@@ -75,46 +94,45 @@ class WpChecker {
         $this->xpath = new DOMXpath($this->dom);
     }
 
-    private function sanitize( array $checks )
+    public function getHeader()
     {
-        return array_filter($checks);
+        return $this->header;
+    }
+
+    public function getXpath()
+    {
+        return $this->xpath;
     }
 
     public function disableSslConnection()
     {
-        $this->removeCheck('ssl');
+        $this->remove('ssl');
         $this->scheme = 'http';
         $this->setClient(['verify' => false]);
     }
 
     public function check()
     {
-        foreach( $this->checks as $name => $class ) {
-            $check = new $class($this);
-            $result = $check->run()->result();
-            $this->results->add($result);
+        foreach( $this->inits as $check ) {
+            $check->init();
+        }
+        
+        foreach( $this->checks as $check ) {
+            $check->run();
+            $this->results[$check->name()] = $check;
         }
 
         return $this;
     }
 
-    public function removeCheck( $remove )
-    {
-        if( !is_array($remove) )
-            $remove = [$remove];
-
-        $this->checks = array_diff($this->checks, $remove);
-        return $this;
-    }
-
-    public function clearChecks()
-    {
-        $this->checks = [];
-    }
-
-    public function getResults()
+    public function results()
     {
         return $this->results;
+    }
+
+    public function result( $name )
+    {
+        return $this->results[$name];
     }
 
     public function getScheme()
@@ -131,5 +149,10 @@ class WpChecker {
         $url = parse_url($url);
         $this->host = $url['host'];
         $this->scheme = $scheme;
+    }
+
+    public function jsonSerialize()
+    {
+        return $this->results;
     }
 }

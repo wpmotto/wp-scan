@@ -7,6 +7,8 @@ use Motto\WpChecker;
 class WpScan {
 
     protected $url;
+    protected $checker;
+
     protected $checks = [
         'server' => \Motto\Checks\WpServerCheck::class,
         'endpoints' => \Motto\Checks\WpEndpointsCheck::class,
@@ -18,29 +20,44 @@ class WpScan {
     public function __construct( String $url, Array $checks = [] )
     {
         $this->url = $url;
-        $this->checks($checks);
+        $this->setChecks($checks);
+        $this->checker = new WpChecker($this->checks, $this->url);
     }
 
-    public function checks( array $checks )
+    public function setChecks( array $checks )
     {
-        $this->checks = array_merge($this->checks, $checks);
+        $arr = [];
+        $checks = array_filter($checks);
+        foreach( $checks as $name => $check ) {
+            if( $check == true && is_bool($check) ) {
+                $arr[$name] = $this->checks[$name];
+            } else {
+                $arr[$name] = $check;
+            }
+        }
+
+        $this->checks = $arr;
         return $this;
     }
 
     public function run()
     {
-        $checker = new WpChecker($this->checks, $this->url);
-        $this->results = $checker->check()->getResults();
+        $this->checker->check();
         return $this;
     }
 
     public function json()
     {
-        return json_encode( $this->results );
+        return json_encode( $this->checker );
     }
 
     public function get()
     {
         return $this->results;
+    }
+
+    public function result( $name )
+    {
+        return $this->checker->result( $name );
     }
 }

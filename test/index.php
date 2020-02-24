@@ -7,16 +7,12 @@ use Motto\WpScan;
 $url = "http://wolfemontcalm.com";
 // $url = "http://motto.ca";
 $scan = new WpScan($url, [
-    'server' => false,
-    'endpoints' => false,
-    'version' => false,
-    'ssl' => false,
+    'server' => true,
+    'endpoints' => true,
+    'version' => true,
+    'ssl' => true,
     'plugins' => false,
 ]);
-$scan->run();
 
-header('Content-Type: text/plain');
-print_r($scan);
-
-// header('Content-Type: application/json');
-// echo $scan->json();
+header('Content-Type: application/json');
+echo $scan->run()->json();
