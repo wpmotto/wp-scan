@@ -4,12 +4,21 @@ namespace Motto\Checks;
 
 use Motto\Checks\WpCheck;
 
-class WpVersionCheck extends WpCheck {
+class WpPluginsCheck extends WpCheck {
     
-    const VERSION_API = 'https://api.wordpress.org/core/stable-check/1.0/';
+    const PLUGIN_API = 'https://api.wordpress.org/plugins/info/1.0/{slug}.json';
+
+    protected $regex = '';
 
     public function run()
     {
+        $url = addslashes($this->checker->url() . '/wp-content/plugins/');
+        $this->regex = "\/^$url(*)\/*\/";
+        preg_match($this->regex, $this->checker->getHtml(), $matches);
+        print_r(
+            $matches
+        ); die();
+
         $meta = $this->checker
                         ->getXpath()
                         ->query("//meta[contains(@name,'generator')]");

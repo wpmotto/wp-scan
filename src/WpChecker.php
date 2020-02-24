@@ -17,6 +17,7 @@ class WpChecker implements JsonSerializable {
     protected $inits = [];
     protected $client;
     protected $header;
+    protected $html;
     protected $dom;
     protected $xpath;
     protected $url;
@@ -88,15 +89,20 @@ class WpChecker implements JsonSerializable {
 
     public function setResponse( $response )
     {
-        $html = $response->getBody()->getContents();
+        $this->html = $response->getBody()->getContents();
         $this->header = $response->getHeaders();
-        @$this->dom->loadHTML($html);
+        @$this->dom->loadHTML($this->html);
         $this->xpath = new DOMXpath($this->dom);
     }
 
     public function getHeader()
     {
         return $this->header;
+    }
+
+    public function getHtml()
+    {
+        return $this->html;
     }
 
     public function getXpath()
