@@ -80,6 +80,9 @@ class WpChecker implements JsonSerializable {
         $defaultConfig = [
             'base_uri' => $this->url(),
             'verify' => true,
+            'http_errors' => true,
+            'allow_redirects' => false,
+            'timeout'  => 2.0,
         ];
         $config = array_merge($options, $defaultConfig);
 

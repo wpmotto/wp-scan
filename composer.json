@@ -1,5 +1,6 @@
 {
     "name": "motto/wp-scan",
+    "version": "0.1.1",
     "description": "Scan a URL to detect and retrieve WordPress data.",
     "type": "library",
     "license": "MIT",
@@ -13,10 +14,9 @@
         "psr-4": {
             "Motto\\": "src"
         }
-    },    
-    "minimum-stability": "dev",
+    },
     "require": {
-        "guzzlehttp/guzzle": "^7.0@dev",
-        "spatie/ssl-certificate": "dev-master"
+        "spatie/ssl-certificate": "^1.19",
+        "guzzlehttp/guzzle": "^6.5"
     }
 }

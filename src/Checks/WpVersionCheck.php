@@ -10,22 +10,27 @@ class WpVersionCheck extends WpCheck {
 
     public function run()
     {
-        $meta = $this->checker
+        $meta = false;
+        if( $this->checker->getXpath() )
+            $meta = $this->checker
                         ->getXpath()
                         ->query("//meta[contains(@name,'generator')]");
                         
         $version = false;
         $generator = false;
-        if( $meta->length > 0 ) {
-            $generator = $meta[0]->getAttribute('content');
-        }
 
-        if( strpos(strtolower($generator), 'wordpress') !== false ) {
-            preg_match('/(\d+\.)?(\d+\.)?(\*|\d+)/', $generator, $matches);
-
-            if( !empty($matches) )
-                $version = $matches[0];
-                $this->getVersionInfo($version);
+        if( $meta ) {
+            if( $meta->length > 0 ) {
+                $generator = $meta[0]->getAttribute('content');
+            }
+    
+            if( strpos(strtolower($generator), 'wordpress') !== false ) {
+                preg_match('/(\d+\.)?(\d+\.)?(\*|\d+)/', $generator, $matches);
+    
+                if( !empty($matches) )
+                    $version = $matches[0];
+                    $this->getVersionInfo($version);
+            }    
         }
 
         $this->addProp('generator', $generator);

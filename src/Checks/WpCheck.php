@@ -51,6 +51,11 @@ abstract class WpCheck implements JsonSerializable {
         $this->error = $error;
     }
 
+    public function getErrors()
+    {
+        return $this->error;
+    }
+
     public function result() {
         return $this->props;
     }

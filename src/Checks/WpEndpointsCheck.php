@@ -14,9 +14,15 @@ class WpEndpointsCheck extends WpCheck {
     public function run()
     {
         foreach( $this->endpoints as $uri => $found ) {
-            $this->endpoints[$uri] = (
-                $this->checker->getClient()->get($uri)->getStatusCode() == 200
-            );
+            try {
+                $response = $this->checker->getClient()->get($uri);
+                $this->endpoints[$uri] = (
+                    $response->getStatusCode() == 200
+                );
+            } 
+            catch (\Exception $e) {
+                $this->endpoints[$uri] = false;
+            }     
         }
 
         $this->addProp('endpoints', $this->endpoints);

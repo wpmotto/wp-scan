@@ -4,9 +4,9 @@ namespace Motto\Checks;
 
 use Motto\Checks\WpCheck;
 
-class WpPluginsCheck extends WpCheck {
+class WpBlacklistCheck extends WpCheck {
     
-    const PLUGIN_API = 'https://api.wordpress.org/plugins/info/1.0/{slug}.json';
+    const GOOGLE_SAFE_BROWSING = 'https://safebrowsing.googleapis.com/v4/threatMatches:find?key=';
 
     protected $regex = '/wp-content\/plugins\/([a-z0-9-]+)\/*/';
     protected $plugin_props = [

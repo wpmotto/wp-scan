@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * API: https://codex.wordpress.org/WordPress.org_API
+ */
 namespace Motto;
 
 use Motto\WpChecker;
@@ -53,7 +55,7 @@ class WpScan {
 
     public function get()
     {
-        return $this->results;
+        return $this->checker->results();
     }
 
     public function result( $name )
